@@ -3,7 +3,10 @@
 #include <Avatar.h>
 #include <aquestalk.h>
 #include <ServoEasing.hpp>
-#include <WiFiClientSecure.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <wire.h>
 
 // avatar ============================================================
 using namespace m5avatar;
@@ -20,7 +23,6 @@ const Expression expressions[] = {
     Expression::Doubt,
     Expression::Neutral};
 int idx = 0;
-
 
 // aques talk =========================================================
 const char *AQUESTALK_KEY = "XXXX-XXXX-XXXX-XXXX";
@@ -97,292 +99,180 @@ static void playAquesTalk(const char *koe)
 }
 
 // wifi ===============================================================
-const char *ssid = "aterm-a49c44-g";
-const char *password = "06fda97276af7";
-const int port = 443;
+const char *ssid = "xxx";
+const char *password = "xxx";
 
-const char *jp_weather_host = "www.jma.go.jp";
-String office_code = "120000"; //千葉県
-String jp_weather_area_url = "/bosai/forecast/data/forecast/" + office_code + ".json";
-String area_code_str = "120020"; //千葉北東
+// 画像を入れるフォルダ名
+const char *pictureFolder = "/pictures/";
 
-String search_tag = "code\":\"" + area_code_str + "\"},\"weatherCodes\":[\""; //★要修正
+// 天気予報取得先
+const char *endpointTenki = "https://www.drk7.jp/weather/json/13.js";
+const char *region = "東京地方";
 
-WiFiClientSecure client;
+// AquesTalk内容のソフトコーディング用
+const char *endpointTalk = "https://api.sssapi.app/g3n1Esr9UnOOaLRd5sls_";
 
-const char* classifyWeatherCode(uint16_t weather_code)
+DynamicJsonDocument weatherInfo(20000);
+DynamicJsonDocument talkInfo(20000);
+
+// JSONP形式からJSON形式に変える
+String createJson(String jsonString)
 {
-  const char* weatherText;
-
-  switch (weather_code)
-  {
-  //--------Clear（晴れ）-----------------
-  case 100:
-  case 123:
-  case 124:
-  case 130:
-  case 131:
-    weatherText = "hare";
-    Serial.println("晴れ");
-    break;
-
-  //--------晴れ時々（一時）曇り----------------
-  case 101:
-  case 132:
-    Serial.println("晴れ時々曇り");
-    break;
-
-  //--------晴れ時々（一時）雨----------------
-  case 102:
-  case 103:
-  case 106:
-  case 107:
-  case 108:
-  case 120:
-  case 121:
-  case 140:
-    Serial.println("晴れ時々雨");
-    break;
-
-  //--------晴れ時々（一時）雪----------------
-  case 104:
-  case 105:
-  case 160:
-  case 170:
-    Serial.println("晴れ時々雪");
-    break;
-
-  //--------晴れ後曇り----------------
-  case 110:
-  case 111:
-    Serial.println("晴れ後曇り");
-    break;
-
-  //--------晴れ後雨----------------
-  case 112:
-  case 113:
-  case 114:
-  case 118:
-  case 119:
-  case 122:
-  case 125:
-  case 126:
-  case 127:
-  case 128:
-    Serial.println("晴れ後雨");
-    break;
-
-  //--------晴れ後雪----------------
-  case 115:
-  case 116:
-  case 117:
-  case 181:
-    Serial.println("晴れ後雪");
-    break;
-
-  //--------曇り-----------------
-  case 200:
-  case 209:
-  case 231:
-    Serial.println("曇り");
-    break;
-
-  //--------曇り時々晴れ-----------------
-  case 201:
-  case 223:
-    Serial.println("曇り時々晴れ");
-    break;
-
-  //--------曇り時々雨-----------------
-  case 202:
-  case 203:
-  case 206:
-  case 207:
-  case 208:
-  case 220:
-  case 221:
-  case 240:
-    weatherText = "kumori'/tokidoki/a'me.";
-    sprintf(text, "Sunny & cloudy");
-    Serial.println("曇り時々雨");
-    break;
-
-  //--------曇り一時雪-----------------
-  case 204:
-  case 205:
-  case 250:
-  case 260:
-  case 270:
-    Serial.println("曇り一時雪");
-    break;
-
-  //--------曇り後晴れ-----------------
-  case 210:
-  case 211:
-    Serial.println("曇り後晴れ");
-    break;
-
-  //--------曇り後雨-----------------
-  case 212:
-  case 213:
-  case 214:
-  case 218:
-  case 219:
-  case 222:
-  case 224:
-  case 225:
-  case 226:
-    Serial.println("曇り後雨");
-    break;
-
-  //--------曇り後雪-----------------
-  case 215:
-  case 216:
-  case 217:
-  case 228:
-  case 229:
-  case 230:
-  case 281:
-    Serial.println("曇り後雪");
-    break;
-
-  //--------雨-----------------
-  case 300:
-  case 304:
-  case 306:
-  case 328:
-  case 329:
-  case 350:
-    Serial.println("雨");
-    break;
-
-  //--------雨時々晴れ-----------------
-  case 301:
-    Serial.println("雨時々晴れ");
-    break;
-
-  //--------雨時々曇り-----------------
-  case 302:
-    Serial.println("雨時々曇り");
-    break;
-
-  //--------雨時々雪-----------------
-  case 303:
-  case 309:
-  case 322:
-    Serial.println("雨時々雪");
-    break;
-
-  //--------暴風雨-----------------
-  case 308:
-    Serial.println("暴風雨");
-    break;
-
-  //--------雨後晴れ-----------------
-  case 311:
-  case 316:
-  case 320:
-  case 323:
-  case 324:
-  case 325:
-    Serial.println("雨後晴れ");
-    break;
-
-  //--------雨後曇り-----------------
-  case 313:
-  case 317:
-  case 321:
-    Serial.println("雨後曇り");
-    break;
-
-  //--------雨後雪-----------------
-  case 314:
-  case 315:
-  case 326:
-  case 327:
-    Serial.println("雨後雪");
-    break;
-
-  //--------雪-----------------
-  case 340:
-  case 400:
-  case 405:
-  case 425:
-  case 426:
-  case 427:
-  case 450:
-    Serial.println("雪");
-    break;
-
-  //--------雪時々晴れ-----------------
-  case 401:
-    Serial.println("雪時々晴れ");
-    break;
-
-  //--------雪時々曇り-----------------
-  case 402:
-    Serial.println("雪時々曇り");
-    break;
-
-  //--------雪時々雨-----------------
-  case 403:
-  case 409:
-    Serial.println("雪時々雨");
-    break;
-
-  //--------暴風雪-----------------
-  case 406:
-  case 407:
-    Serial.println("暴風雪");
-    break;
-
-  //--------雪後晴れ-----------------
-  case 361:
-  case 411:
-  case 420:
-    Serial.println("雪後晴れ");
-    break;
-
-  //--------雪後曇り-----------------
-  case 371:
-  case 413:
-  case 421:
-    Serial.println("雪後曇り");
-    break;
-
-  //--------雪後雨-----------------
-  case 414:
-  case 422:
-  case 423:
-    Serial.println("雪後雨");
-    break;
-
-  default:
-    break;
-  }
-
-  return weatherText;
+  jsonString.replace("drk7jpweather.callback(", "");
+  return jsonString.substring(0, jsonString.length() - 2);
 }
 
-void extractWeatherCodes(String ret_str, String weather_code_from_key)
+DynamicJsonDocument getJson(const char *endpoint)
 {
-  uint8_t from1 = ret_str.indexOf(weather_code_from_key, 0) + weather_code_from_key.length();
-  uint8_t to1 = from1 + 3;
-  String today_w_code_str = ret_str.substring(from1, to1);
-  uint16_t today_weather_code = atoi(today_w_code_str.c_str());
-  //Serial.print("Today Weather Coode = ");
-  //Serial.println(today_weather_code);
-  //Serial.print("今日の天気：");
-  playAquesTalk("kyo'-no/te'nnkiwa");
-  waitAquesTalk();
+  DynamicJsonDocument doc(20000);
 
-  playAquesTalk(classifyWeatherCode(today_weather_code));
-  waitAquesTalk();
+  if ((WiFi.status() == WL_CONNECTED))
+  {
+    HTTPClient http;
+    http.begin(endpoint);
+    int httpCode = http.GET();
+    if (httpCode > 0 && endpoint == endpointTenki)
+    {
+      // jsonオブジェクトの作成
+      String jsonString = createJson(http.getString());
+      deserializeJson(doc, jsonString);
+    }
+    else if (httpCode > 0)
+    {
+      String jsonString = http.getString();
+      deserializeJson(doc, jsonString);
+      Serial.println(jsonString);
+    }
+    if (httpCode <= 0)
+    {
+      Serial.println("Error on HTTP request");
+    }
+    http.end(); //リソースを解放
+  }
+  return doc;
+}
 
-  delay(100);
+void drawTemperature(String maxTemperature, String minTemperature)
+{
+  M5.Lcd.setTextColor(RED);
+  M5.Lcd.setTextSize(4);
+  M5.Lcd.setCursor(15, 80);
+  M5.Lcd.print(maxTemperature);
 
-  playAquesTalk("dayo-");
+  M5.Lcd.setTextColor(WHITE);
+  M5.Lcd.setCursor(70, 80);
+  M5.Lcd.print("|");
+
+  M5.Lcd.setTextColor(BLUE);
+  M5.Lcd.setCursor(105, 80);
+  M5.Lcd.print(minTemperature);
+}
+
+void drawRainfallChancce(String rfc0_6, String rfc6_12, String rfc12_18, String rfc18_24)
+{
+  M5.Lcd.setTextSize(3);
+  M5.Lcd.setTextColor(WHITE);
+  M5.Lcd.setCursor(27, 200);
+  M5.Lcd.print(rfc0_6);
+
+  M5.Lcd.setCursor(92, 200);
+  M5.Lcd.print(rfc6_12);
+
+  M5.Lcd.setCursor(165, 200);
+  M5.Lcd.print(rfc12_18);
+
+  M5.Lcd.setCursor(245, 200);
+  M5.Lcd.print(rfc18_24);
+}
+
+void drawDate(String date)
+{
+  M5.Lcd.setTextColor(WHITE);
+  M5.Lcd.setTextSize(3);
+  M5.Lcd.setCursor(10, 10);
+  M5.Lcd.print(date);
+}
+
+void drawWeather(String infoWeather)
+{
+  M5.Lcd.clear();
+  DynamicJsonDocument doc(20000);
+  deserializeJson(doc, infoWeather);
+  String weather = doc["weather"];
+  String filename = "";
+
+  if (weather.indexOf("雨") != -1)
+  {
+    if (weather.indexOf("曇") != -1)
+    {
+      filename = "rainyandcloudy.jpg";
+      playAquesTalk("kumori/tokidoki/a'me");
+    }
+    else
+    {
+      filename = "rainy.jpg";
+      playAquesTalk("a'me");
+    }
+  }
+  else if (weather.indexOf("晴") != -1)
+  {
+    if (weather.indexOf("曇") != -1)
+    {
+      filename = "sunnyandcloudy.jpg";
+      playAquesTalk("kumori/tokidoki/hare");
+    }
+    else
+    {
+      filename = "sunny.jpg";
+      playAquesTalk("hare");
+    }
+  }
+  else if (weather.indexOf("雪") != -1)
+  {
+    filename = "snow.jpg";
+    playAquesTalk("yuki");
+  }
+  else if (weather.indexOf("曇") != -1)
+  {
+    filename = "cloudy.jpg";
+    playAquesTalk("kumori");
+  }
+
+  if (filename.equals(""))
+  {
+    return;
+  }
+
+  String filePath = "/" + filename;
+  M5.Lcd.drawJpgFile(SPIFFS, filePath);
+
+  String maxTemperature = doc["temperature"]["range"][0]["content"];
+  String minTemperature = doc["temperature"]["range"][1]["content"];
+  drawTemperature(maxTemperature, minTemperature);
+
+  String railfallchance0_6 = doc["rainfallchance"]["period"][0]["content"];
+  String railfallchance6_12 = doc["rainfallchance"]["period"][1]["content"];
+  String railfallchance12_18 = doc["rainfallchance"]["period"][2]["content"];
+  String railfallchance18_24 = doc["rainfallchance"]["period"][3]["content"];
+  drawRainfallChancce(railfallchance0_6, railfallchance6_12, railfallchance12_18, railfallchance18_24);
+
+  drawDate(doc["date"]);
   waitAquesTalk();
+  playAquesTalk("dayo.");
+}
+
+void drawTodayWeather()
+{
+  String today = weatherInfo["pref"]["area"][region]["info"][0];
+  Serial.println(today);
+  drawWeather(today);
+}
+
+void drawTomorrowWeather()
+{
+  String tomorrow = weatherInfo["pref"]["area"][region]["info"][1];
+  Serial.println(tomorrow);
+  drawWeather(tomorrow);
 }
 
 // サーボ ==============================================================
@@ -406,14 +296,15 @@ void moveServo()
   synchronizeAllServosStartAndWaitForAllServosToStop();
 }
 
-
 // main =====================================================================
 
 void setup()
 {
+  Serial.begin(115200);
   auto cfg = M5.config();
   M5.begin(cfg);
   M5.Power.begin();
+  SPIFFS.begin();
 
   servo_x.attach(SERVO_PIN_X,
                  START_DEGREE_VALUE_X,
@@ -444,7 +335,7 @@ void loop()
 {
   bool stopWatchMode = false;
   bool weatherMode = false;
-  bool quizMode = false;
+  bool questionMode = false;
   unsigned long now = millis();
 
   if ((now - startTime) > moveServoInterval)
@@ -456,198 +347,157 @@ void loop()
   }
 
   M5.update();
-  if (M5.BtnA.wasClicked()) // 簡易ストップウォッチ
+  if (M5.BtnA.wasClicked()) {stopWatchMode = true;}
+  else if (M5.BtnB.wasClicked()) {questionMode = true;}
+  else if (M5.BtnC.wasClicked()) {weatherMode = true;}
+
+
+  if (stopWatchMode) //=========================================================
   {
     servo_x.setEaseToD(90, 1000);
     servo_y.setEaseToD(80, 1000);
-    stopWatchMode = true;
     startTime = millis();
-    playAquesTalk("taima--/suta-to/suruyo-");
+    playAquesTalk("ta'ima-/_suta'-to/suruyo-.");
     avatar.setSpeechText(text);
-  }
-  else if (M5.BtnB.wasClicked())
-  {
-    playAquesTalk("kyouno/tenki");
-  }
-  else if (M5.BtnC.wasClicked())
-  {
-    weatherMode = true;
-    avatar.setSpeechText(text);
-  }
 
-  while (stopWatchMode)
-  {
-    unsigned long collapseTime = millis() - startTime;
-
-    if (collapseTime / 1000 <= 60)
+    while (true)
     {
-      sprintf(text, "%d sec", collapseTime / 1000);
-    }
-    else
-    {
-      int minutes = collapseTime / 60000;
-      sprintf(text, "%d min %d sec", minutes, (collapseTime / 1000) % 60);
-    }
-
-    if (collapseTime / 1000 == 30)
-    {
-      playAquesTalk("<NUMK VAL=30 COUNTER=byo->/tattayo-");
-    }
-    else if ((collapseTime / 1000) % 60 == 0 && collapseTime / 1000 != 0)
-    {
-      int minutes = collapseTime / 60000;
-      sprintf(talk, "<NUMK VAL=%d COUNTER=funn>/ta'ttayo-.", minutes);
-      playAquesTalk(talk);
-    }
-    delay(10);
-
-    M5.update();
-    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
-    {
-      int finishTimeMinute = collapseTime / 60000;
-      int finishTimeSecond = (collapseTime / 1000) % 60;
-      avatar.setExpression(expressions[2]);
-
-      playAquesTalk("kaka'tta/jikannwa");
-      waitAquesTalk();
-      if (finishTimeMinute > 0)
+      unsigned long collapseTime = millis() - startTime;
+      if (collapseTime / 1000 <= 60)
       {
-        sprintf(talk, "<NUMK VAL=%d COUNTER=funn>", finishTimeMinute);
-        playAquesTalk(talk);
-        waitAquesTalk();
-      }
-      sprintf(talk, "<NUMK VAL=%d COUNTER=byo->", finishTimeSecond);
-      playAquesTalk(talk);
-      waitAquesTalk();
-      playAquesTalk("dayo");
-      waitAquesTalk();
-      delay(200);
-
-      if (finishTimeSecond % 2 == 0)
-      {
-        playAquesTalk("gannba'ttane'");
-        waitAquesTalk();
+        sprintf(text, "%d sec", collapseTime / 1000);
       }
       else
       {
+        int minutes = collapseTime / 60000;
+        sprintf(text, "%d min %d sec", minutes, (collapseTime / 1000) % 60);
+      }
+
+      if (collapseTime / 1000 == 30)
+      {
+        playAquesTalk("<NUMK VAL=30 COUNTER=byo->/ke-ka.");
+      }
+      else if ((collapseTime / 1000) % 60 == 0 && collapseTime / 1000 != 0)
+      {
+        int minutes = collapseTime / 60000;
+        sprintf(talk, "<NUMK VAL=%d COUNTER=funn>/ke-ka.", minutes);
+        playAquesTalk(talk);
+      }
+      delay(10);
+
+      M5.update();
+      if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
+      {
+        int finishTimeMinute = collapseTime / 60000;
+        int finishTimeSecond = (collapseTime / 1000) % 60;
+        avatar.setExpression(expressions[2]);
+
+        playAquesTalk("kaka'tta/jikannwa");
+        waitAquesTalk();
+        if (finishTimeMinute > 0)
+        {
+          sprintf(talk, "<NUMK VAL=%d COUNTER=funn>", finishTimeMinute);
+          playAquesTalk(talk);
+          waitAquesTalk();
+        }
+        sprintf(talk, "<NUMK VAL=%d COUNTER=byo->", finishTimeSecond);
+        playAquesTalk(talk);
+        waitAquesTalk();
+        playAquesTalk("dayo");
+        waitAquesTalk();
+        delay(200);
+
         playAquesTalk("o_tsukaresamade'shi'ta-");
         waitAquesTalk();
-      }
 
-      stopWatchMode = false;
-      startTime = millis();
-      avatar.setExpression(expressions[5]);
+        startTime = millis();
+        avatar.setExpression(expressions[5]);
+        break;
+      }
+      pinMode(26, INPUT_PULLDOWN); // スピーカーノイズ対策
     }
-    pinMode(26, INPUT_PULLDOWN); // スピーカーノイズ対策
   }
 
-
-  if (weatherMode)
-  {
+  if (weatherMode)  //天気予報表示 https://kuracux.hatenablog.jp/entry/2019/07/13/101143
+  { 
+    avatar.setSpeechText("");
     WiFi.begin(ssid, password);
+
+    startTime = millis();
     while (WiFi.status() != WL_CONNECTED)
     {
-      sprintf(text, "connecting");
-      playAquesTalk("tsu-shinnchu-.");
-      waitAquesTalk();
+      int wifiTryTimes = 0;
       delay(1000);
-    }
-    client.setInsecure(); //ルートCA無しの場合
+      Serial.println("Connecting to WiFi..");
+      playAquesTalk("tu-shintyu-");
+      waitAquesTalk();
 
-    uint32_t time_out = millis();
+      if (millis() - startTime > 6000)
+      {
+        wifiTryTimes++;
+        startTime = millis();
+        WiFi.disconnect(true);
+        delay(100);
+        WiFi.begin(ssid, password);
+      }
+
+      if (wifiTryTimes > 2)
+      {
+        playAquesTalk("tu-shin/sippai");
+        break;
+      }
+    }
+    Serial.println("Connected to the WiFi network");
+
+    weatherInfo = getJson(endpointTenki);
+    WiFi.disconnect(true);
+
+    playAquesTalk("kyo'-no/te'nnkiwa.");
+    waitAquesTalk();
+    avatar.stop();
+
+    delay(500);
+
+    drawTodayWeather();
+
     while (true)
     {
-      if (client.connect(jp_weather_host, port))
+      M5.update();
+      if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
       {
-        playAquesTalk("tsu-shinnseikou.");
-        sprintf(text, "connected");
-
-        String req_header_str = String("GET ");
-        req_header_str += String(jp_weather_area_url) + " HTTP/1.1\r\n";
-        req_header_str += "Host: ";
-        req_header_str += String(jp_weather_host) + "\r\n";
-        req_header_str += "User-Agent: BuildFailureDetectorESP32\r\n";
-        req_header_str += "Accept: text/html,application/xhtml+xml,application/xml\r\n";
-        req_header_str += "Connection: close\r\n\r\n";
-
-        client.print(req_header_str);
+        playAquesTalk("a_shitano/te'nnkiwa.");
+        waitAquesTalk();
+        drawTomorrowWeather();
         break;
       }
+    }
 
-      if ((millis() - time_out) > 8000)
+    while (true)
+    {
+      M5.update();
+      if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
       {
-        playAquesTalk("tsu-shinn/sippai.");
-        sprintf(text, "failed");
-        WiFi.disconnect(true);
-        WiFi.mode(WIFI_OFF);
         break;
       }
-      delay(1);
     }
-
-    String ret_str;
-    time_out = millis();
-
-    if (client)
-    {
-      String tmp_str;
-      if (client.connected())
-      {
-        while (true)
-        {
-          if ((millis() - time_out) > 60000)
-          {
-            sprintf(text, "failed");
-            break;
-          }
-
-          //★★ここから要修正
-          tmp_str = client.readStringUntil(']');
-          Serial.println(tmp_str);
-          if (tmp_str.indexOf(search_tag) >= 0)
-          {
-            ret_str += tmp_str;
-            ret_str += "] ";
-            break;
-          }
-          delay(1);
-        }
-
-        while (client.available())
-        {
-          if ((millis() - time_out) > 60000)
-            break; // 60seconds Time Out
-          client.read();
-          delay(1);
-        }
-
-        delay(10);
-        client.stop();
-        delay(10);
-      }
-    }
-
-    if (ret_str.length() < 20)
-      ret_str = "※JSON GETできませんでした";
-
-    if (client)
-    {
-      delay(10);
-      client.stop();
-      delay(10);
-    }
-
-    Serial.print("抽出した文字列：");
-    Serial.println(ret_str);
-
-    String weather_code_from_key = "weatherCodes\":[\"";
-    extractWeatherCodes(ret_str, weather_code_from_key);
-
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
-
-    weatherMode = false;
+    avatar.start();
     startTime = millis();
+  }
+
+  if (questionMode)  //========================================================
+  {
+    WiFi.begin(ssid, password);
+
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(1000);
+      Serial.println("Connecting to WiFi..");
+      playAquesTalk("tu-shintyu-");
+      waitAquesTalk();
+    }
+    Serial.println("Connected to the WiFi network");
+    talkInfo = getJson(endpointTalk);
+    WiFi.disconnect(true);
   }
 
   pinMode(26, INPUT_PULLDOWN); // スピーカーノイズ対策
