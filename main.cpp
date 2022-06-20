@@ -6,7 +6,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <wire.h>
+#include <Wire.h>
 
 // avatar ============================================================
 using namespace m5avatar;
@@ -99,17 +99,14 @@ static void playAquesTalk(const char *koe)
 }
 
 // wifi ===============================================================
-const char *ssid = "xxx";
-const char *password = "xxx";
-
-// 画像を入れるフォルダ名
-const char *pictureFolder = "/pictures/";
+const char *ssid = "aterm-a49c44-g";
+const char *password = "06fda97276af7";
 
 // 天気予報取得先
 const char *endpointTenki = "https://www.drk7.jp/weather/json/13.js";
 const char *region = "東京地方";
 
-// AquesTalk内容のソフトコーディング用
+// SSSAPI(AquesTalk内容のソフトコーディング用)
 const char *endpointTalk = "https://api.sssapi.app/g3n1Esr9UnOOaLRd5sls_";
 
 DynamicJsonDocument weatherInfo(20000);
@@ -275,6 +272,97 @@ void drawTomorrowWeather()
   drawWeather(tomorrow);
 }
 
+void questions()
+{
+  int num = (int)talkInfo[0]["question"];
+  int id = random(1, num);
+  const char *question = talkInfo[id]["question"];
+  const char *answer = talkInfo[id]["answer"];
+
+  playAquesTalk(question);
+  waitAquesTalk();
+
+  while (true)
+  {
+    M5.update();
+    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
+    {
+      playAquesTalk(answer);
+      waitAquesTalk();
+      break;
+    }
+  }
+}
+
+void mamechisiki()
+{
+  int num = (int)talkInfo[0]["mame"];
+  int id = random(1, num);
+  const char *mame = talkInfo[id]["mame"];
+
+  playAquesTalk("ne'-/shitteru?");
+  waitAquesTalk();
+  delay(500);
+  playAquesTalk(mame);
+  waitAquesTalk();
+}
+
+void arithmetic()
+{
+  int a;
+  int b;
+  int answer;
+
+  playAquesTalk("mondai/dayo");
+
+  if ((int)talkInfo[0]["answer"] == 1)
+  {
+    a = random(1, 9);
+    b = random(1, 9);
+    answer = a + b;
+    sprintf(talk, "<NUM VAL=%d> tasu <NUM VAL=%d> wa?", a, b);
+    playAquesTalk(talk);
+  }
+  else if ((int)talkInfo[0]["answer"] == 2)
+  {
+    a = random(1, 9);
+    b = random(1, a);
+    answer = a - b;
+    sprintf(talk, "<NUM VAL=%d> hiku <NUM VAL=%d> wa?", a, b);
+    playAquesTalk(talk);
+  }
+  else if ((int)talkInfo[0]["answer"] == 3)
+  {
+    a = random(1, 9);
+    b = random(1, 9);
+    answer = a * b;
+    sprintf(talk, "<NUM VAL=%d> kakeru <NUM VAL=%d> wa?", a, b);
+    playAquesTalk(talk);
+  }
+  else if ((int)talkInfo[0]["answer"] == 4)
+  {
+    a = random(1, 9);
+    answer = random(1, 9);
+    b = a * answer;
+    sprintf(talk, "<NUM VAL=%d> waru <NUM VAL=%d> wa?", b, a);
+    playAquesTalk(talk);
+  }
+  waitAquesTalk();
+
+  while (true)
+  {
+    M5.update();
+    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
+    {
+      sprintf(talk, "kota'ewa <NUMK VAL=%d> dayo-", answer);
+      playAquesTalk(talk);
+      waitAquesTalk();
+      break;
+    }
+    delay(10);
+  }
+}
+
 // サーボ ==============================================================
 #define SERVO_PIN_X G5
 #define SERVO_PIN_Y G2
@@ -288,12 +376,168 @@ int moveServoInterval = 8000;
 
 void moveServo()
 {
-  int x = random(60, 120);
-  int y = random(72, 93);
-  int delay_time = random(900);
+  int x = random(70, 110);
+  int y = random(75, 92);
+  int delay_time = random(600);
   servo_x.setEaseToD(x, 400 + delay_time);
   servo_y.setEaseToD(y, 400 + delay_time);
   synchronizeAllServosStartAndWaitForAllServosToStop();
+  servo_y.setEaseToD(y + 2, 300 + delay_time); // サーボの鳴り防止
+  synchronizeAllServosStartAndWaitForAllServosToStop();
+}
+
+//ボタン押したときの処理===============================================
+
+void stopWatchMode()
+{
+
+  servo_x.setEaseToD(90, 500);
+  servo_y.setEaseToD(80, 500);
+  synchronizeAllServosStartAndWaitForAllServosToStop();
+  startTime = millis();
+  playAquesTalk("ta'ima-/_suta'-to/suruyo-.");
+  avatar.setSpeechText(text);
+
+  while (true)
+  {
+    unsigned long collapseTime = millis() - startTime;
+    if (collapseTime / 1000 <= 60)
+    {
+      sprintf(text, "%d sec", collapseTime / 1000);
+    }
+    else
+    {
+      int minutes = collapseTime / 60000;
+      sprintf(text, "%d min %d sec", minutes, (collapseTime / 1000) % 60);
+    }
+
+    if (collapseTime / 1000 == 30)
+    {
+      playAquesTalk("<NUMK VAL=30 COUNTER=byo->/ke-ka.");
+    }
+    else if ((collapseTime / 1000) % 60 == 0 && collapseTime / 1000 != 0)
+    {
+      int minutes = collapseTime / 60000;
+      sprintf(talk, "<NUMK VAL=%d COUNTER=funn>/ke-ka.", minutes);
+      playAquesTalk(talk);
+    }
+    delay(10);
+
+    M5.update();
+    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
+    {
+      int finishTimeMinute = collapseTime / 60000;
+      int finishTimeSecond = (collapseTime / 1000) % 60;
+      avatar.setExpression(expressions[2]);
+
+      playAquesTalk("kaka'tta/jikannwa");
+      waitAquesTalk();
+      if (finishTimeMinute > 0)
+      {
+        sprintf(talk, "<NUMK VAL=%d COUNTER=funn>", finishTimeMinute);
+        playAquesTalk(talk);
+        waitAquesTalk();
+      }
+      sprintf(talk, "<NUMK VAL=%d COUNTER=byo->", finishTimeSecond);
+      playAquesTalk(talk);
+      waitAquesTalk();
+      playAquesTalk("dayo");
+      waitAquesTalk();
+      delay(200);
+
+      playAquesTalk("o_tsukaresamade'shi'ta-");
+      waitAquesTalk();
+
+      startTime = millis();
+      avatar.setExpression(expressions[5]);
+      break;
+    }
+    pinMode(26, INPUT_PULLDOWN); // スピーカーノイズ対策
+  }
+}
+
+void sssapiTalkMode()
+{
+  avatar.setSpeechText("");
+  if ((int)talkInfo[0]["answer"] > 0)
+  {
+    arithmetic();
+  }
+  else if ((int)talkInfo[0]["mame"] > 0)
+  {
+    mamechisiki();
+  }
+  else if ((int)talkInfo[0]["question"] > 0)
+  {
+    questions();
+  }
+  startTime = millis();
+}
+
+void weatherMode()
+{
+  avatar.setSpeechText("");
+  WiFi.begin(ssid, password);
+
+  startTime = millis();
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    int wifiTryTimes = 0;
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
+    playAquesTalk("tu-shintyu-");
+    waitAquesTalk();
+
+    if (millis() - startTime > 6000)
+    {
+      wifiTryTimes++;
+      startTime = millis();
+      WiFi.disconnect(true);
+      delay(100);
+      WiFi.begin(ssid, password);
+    }
+
+    if (wifiTryTimes > 2)
+    {
+      playAquesTalk("tu-shin/sippai");
+      break;
+    }
+  }
+  Serial.println("Connected to the WiFi network");
+
+  weatherInfo = getJson(endpointTenki);
+  WiFi.disconnect(true);
+
+  playAquesTalk("kyo'-no/te'nnkiwa.");
+  waitAquesTalk();
+  avatar.stop();
+
+  delay(500);
+
+  drawTodayWeather();
+
+  while (true)
+  {
+    M5.update();
+    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
+    {
+      playAquesTalk("a_shitano/te'nnkiwa.");
+      waitAquesTalk();
+      drawTomorrowWeather();
+      break;
+    }
+  }
+
+  while (true)
+  {
+    M5.update();
+    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
+    {
+      break;
+    }
+  }
+  avatar.start();
+  startTime = millis();
 }
 
 // main =====================================================================
@@ -328,177 +572,72 @@ void setup()
   avatar.init();
   xTaskCreateUniversal(talk_task, "talk_task", 4096, nullptr, 1, &task_handle, APP_CPU_NUM);
 
-  M5.Speaker.setVolume(70);
+  M5.Speaker.setVolume(110);
+
+  avatar.setSpeechText("");
+  WiFi.begin(ssid, password);
+  avatar.setSpeechText("Initializing...");
+
+  startTime = millis();
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    int wifiTryTimes = 0;
+    delay(1000);
+
+    if (millis() - startTime > 6000)
+    {
+      wifiTryTimes++;
+      startTime = millis();
+      WiFi.disconnect(true);
+      delay(500);
+      WiFi.begin(ssid, password);
+    }
+
+    if (wifiTryTimes > 2)
+    {
+      avatar.setSpeechText("Communication failure");
+      break;
+    }
+  }
+  talkInfo = getJson(endpointTalk);
+  WiFi.disconnect(true);
 }
 
 void loop()
 {
-  bool stopWatchMode = false;
-  bool weatherMode = false;
-  bool questionMode = false;
   unsigned long now = millis();
 
   if ((now - startTime) > moveServoInterval)
   {
     moveServo();
     startTime = millis();
-    moveServoInterval = 5000 + random(10000);
+    moveServoInterval = 10000 + random(10000);
     avatar.setSpeechText("");
   }
 
   M5.update();
-  if (M5.BtnA.wasClicked()) {stopWatchMode = true;}
-  else if (M5.BtnB.wasClicked()) {questionMode = true;}
-  else if (M5.BtnC.wasClicked()) {weatherMode = true;}
-
-
-  if (stopWatchMode) //=========================================================
+  if (M5.BtnA.wasClicked())
   {
-    servo_x.setEaseToD(90, 1000);
-    servo_y.setEaseToD(80, 1000);
-    startTime = millis();
-    playAquesTalk("ta'ima-/_suta'-to/suruyo-.");
-    avatar.setSpeechText(text);
-
-    while (true)
-    {
-      unsigned long collapseTime = millis() - startTime;
-      if (collapseTime / 1000 <= 60)
-      {
-        sprintf(text, "%d sec", collapseTime / 1000);
-      }
-      else
-      {
-        int minutes = collapseTime / 60000;
-        sprintf(text, "%d min %d sec", minutes, (collapseTime / 1000) % 60);
-      }
-
-      if (collapseTime / 1000 == 30)
-      {
-        playAquesTalk("<NUMK VAL=30 COUNTER=byo->/ke-ka.");
-      }
-      else if ((collapseTime / 1000) % 60 == 0 && collapseTime / 1000 != 0)
-      {
-        int minutes = collapseTime / 60000;
-        sprintf(talk, "<NUMK VAL=%d COUNTER=funn>/ke-ka.", minutes);
-        playAquesTalk(talk);
-      }
-      delay(10);
-
-      M5.update();
-      if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
-      {
-        int finishTimeMinute = collapseTime / 60000;
-        int finishTimeSecond = (collapseTime / 1000) % 60;
-        avatar.setExpression(expressions[2]);
-
-        playAquesTalk("kaka'tta/jikannwa");
-        waitAquesTalk();
-        if (finishTimeMinute > 0)
-        {
-          sprintf(talk, "<NUMK VAL=%d COUNTER=funn>", finishTimeMinute);
-          playAquesTalk(talk);
-          waitAquesTalk();
-        }
-        sprintf(talk, "<NUMK VAL=%d COUNTER=byo->", finishTimeSecond);
-        playAquesTalk(talk);
-        waitAquesTalk();
-        playAquesTalk("dayo");
-        waitAquesTalk();
-        delay(200);
-
-        playAquesTalk("o_tsukaresamade'shi'ta-");
-        waitAquesTalk();
-
-        startTime = millis();
-        avatar.setExpression(expressions[5]);
-        break;
-      }
-      pinMode(26, INPUT_PULLDOWN); // スピーカーノイズ対策
-    }
+    stopWatchMode();
   }
-
-  if (weatherMode)  //天気予報表示 https://kuracux.hatenablog.jp/entry/2019/07/13/101143
-  { 
-    avatar.setSpeechText("");
-    WiFi.begin(ssid, password);
-
-    startTime = millis();
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      int wifiTryTimes = 0;
-      delay(1000);
-      Serial.println("Connecting to WiFi..");
-      playAquesTalk("tu-shintyu-");
-      waitAquesTalk();
-
-      if (millis() - startTime > 6000)
-      {
-        wifiTryTimes++;
-        startTime = millis();
-        WiFi.disconnect(true);
-        delay(100);
-        WiFi.begin(ssid, password);
-      }
-
-      if (wifiTryTimes > 2)
-      {
-        playAquesTalk("tu-shin/sippai");
-        break;
-      }
-    }
-    Serial.println("Connected to the WiFi network");
-
-    weatherInfo = getJson(endpointTenki);
-    WiFi.disconnect(true);
-
-    playAquesTalk("kyo'-no/te'nnkiwa.");
-    waitAquesTalk();
-    avatar.stop();
-
-    delay(500);
-
-    drawTodayWeather();
-
-    while (true)
-    {
-      M5.update();
-      if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
-      {
-        playAquesTalk("a_shitano/te'nnkiwa.");
-        waitAquesTalk();
-        drawTomorrowWeather();
-        break;
-      }
-    }
-
-    while (true)
-    {
-      M5.update();
-      if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
-      {
-        break;
-      }
-    }
-    avatar.start();
-    startTime = millis();
-  }
-
-  if (questionMode)  //========================================================
+  else if (M5.BtnB.wasClicked())
   {
-    WiFi.begin(ssid, password);
-
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      delay(1000);
-      Serial.println("Connecting to WiFi..");
-      playAquesTalk("tu-shintyu-");
-      waitAquesTalk();
-    }
-    Serial.println("Connected to the WiFi network");
-    talkInfo = getJson(endpointTalk);
-    WiFi.disconnect(true);
+    sssapiTalkMode();
   }
-
+  else if (M5.BtnC.wasClicked())
+  {
+    weatherMode();
+  }
   pinMode(26, INPUT_PULLDOWN); // スピーカーノイズ対策
+
+  // バッテリーが減ったら眠くする
+  uint8_t BatteryLevel = M5.Power.getBatteryLevel();
+  if (BatteryLevel <= 25)
+  {
+    avatar.setExpression(expressions[1]);
+  }
+  else
+  {
+    avatar.setExpression(expressions[5]);
+  }
 }
