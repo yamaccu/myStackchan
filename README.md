@@ -21,8 +21,17 @@ framework = arduino
 [D級アンプ](https://akizukidenshi.com/catalog/g/gK-08217/)  
 [スピーカー](https://akizukidenshi.com/catalog/g/gP-12494/)  
 
+## トーク内容を外部から編集
+
+以下の方法で、ソースを変更せずにトーク内容を編集しています。  
+
+1. SSSAPIというサービスを使ってWEB APIを作成
+2. M5StackからAPIを読み取って、AquesTalkで音声出力
+
 
 ## 参考HP
 
 [stack-chan-tester](https://github.com/mongonta0716/stack-chan-tester)  
-[気象庁天気予報JSONを取得して天気予報を表示させてみた](https://www.mgo-tec.com/blog-entry-jp-weather01.html)  
+[天気予報をM5Stackで表示してみた](https://kuracux.hatenablog.jp/entry/2019/07/13/101143)  
+[天気予報API](https://www.drk7.jp/weather/)  
+[SSSAPI](https://sssapi.app/)
