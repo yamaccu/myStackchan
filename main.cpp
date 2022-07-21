@@ -272,97 +272,6 @@ void drawTomorrowWeather()
   drawWeather(tomorrow);
 }
 
-void questions()
-{
-  int num = (int)talkInfo[0]["question"];
-  int id = random(1, num);
-  const char *question = talkInfo[id]["question"];
-  const char *answer = talkInfo[id]["answer"];
-
-  playAquesTalk(question);
-  waitAquesTalk();
-
-  while (true)
-  {
-    M5.update();
-    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
-    {
-      playAquesTalk(answer);
-      waitAquesTalk();
-      break;
-    }
-  }
-}
-
-void mamechisiki()
-{
-  int num = (int)talkInfo[0]["mame"];
-  int id = random(1, num);
-  const char *mame = talkInfo[id]["mame"];
-
-  playAquesTalk("ne'-/shitteru?");
-  waitAquesTalk();
-  delay(500);
-  playAquesTalk(mame);
-  waitAquesTalk();
-}
-
-void arithmetic()
-{
-  int a;
-  int b;
-  int answer;
-
-  playAquesTalk("mondai/dayo");
-
-  if ((int)talkInfo[0]["answer"] == 1)
-  {
-    a = random(1, 9);
-    b = random(1, 9);
-    answer = a + b;
-    sprintf(talk, "<NUM VAL=%d> tasu <NUM VAL=%d> wa?", a, b);
-    playAquesTalk(talk);
-  }
-  else if ((int)talkInfo[0]["answer"] == 2)
-  {
-    a = random(1, 9);
-    b = random(1, a);
-    answer = a - b;
-    sprintf(talk, "<NUM VAL=%d> hiku <NUM VAL=%d> wa?", a, b);
-    playAquesTalk(talk);
-  }
-  else if ((int)talkInfo[0]["answer"] == 3)
-  {
-    a = random(1, 9);
-    b = random(1, 9);
-    answer = a * b;
-    sprintf(talk, "<NUM VAL=%d> kakeru <NUM VAL=%d> wa?", a, b);
-    playAquesTalk(talk);
-  }
-  else if ((int)talkInfo[0]["answer"] == 4)
-  {
-    a = random(1, 9);
-    answer = random(1, 9);
-    b = a * answer;
-    sprintf(talk, "<NUM VAL=%d> waru <NUM VAL=%d> wa?", b, a);
-    playAquesTalk(talk);
-  }
-  waitAquesTalk();
-
-  while (true)
-  {
-    M5.update();
-    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
-    {
-      sprintf(talk, "kota'ewa <NUMK VAL=%d> dayo-", answer);
-      playAquesTalk(talk);
-      waitAquesTalk();
-      break;
-    }
-    delay(10);
-  }
-}
-
 // サーボ ==============================================================
 #define SERVO_PIN_X G5
 #define SERVO_PIN_Y G2
@@ -456,6 +365,104 @@ void stopWatchMode()
   }
 }
 
+void mamechisiki()
+{
+  int num = (int)talkInfo[0]["mame"];
+  int id = random(1, num);
+  const char *mame = talkInfo[id]["mame"];
+
+  playAquesTalk("ne'-/shitteru?");
+  waitAquesTalk();
+  delay(500);
+  playAquesTalk(mame);
+  waitAquesTalk();
+}
+
+void arithmetic()
+{
+  int a;
+  int b;
+  int answer;
+
+  playAquesTalk("mondai/dayo");
+
+  if ((int)talkInfo[0]["answer"] == 1)
+  {
+    a = random(1, 9);
+    b = random(1, 9);
+    answer = a + b;
+    sprintf(talk, "<NUMK VAL=%d> tasu <NUMK VAL=%d> wa?", a, b);
+    playAquesTalk(talk);
+  }
+  else if ((int)talkInfo[0]["answer"] == 2)
+  {
+    a = random(1, 9);
+    b = random(1, a);
+    answer = a - b;
+    sprintf(talk, "<NUMK VAL=%d> hiku <NUMK VAL=%d> wa?", a, b);
+    playAquesTalk(talk);
+  }
+  else if ((int)talkInfo[0]["answer"] == 3)
+  {
+    a = random(1, 9);
+    b = random(1, 9);
+    answer = a * b;
+    sprintf(talk, "<NUMK VAL=%d> kakeru <NUMK VAL=%d> wa?", a, b);
+    playAquesTalk(talk);
+  }
+  else if ((int)talkInfo[0]["answer"] == 4)
+  {
+    a = random(1, 9);
+    answer = random(1, 9);
+    b = a * answer;
+    sprintf(talk, "<NUMK VAL=%d> waru <NUMK VAL=%d> wa?", b, a);
+    playAquesTalk(talk);
+  }
+  else if ((int)talkInfo[0]["answer"] == 5)
+  {
+    sprintf(talk, "papiika mamii okinnsyai ippainetadesyo");
+    //sprintf(talk, "明日の天気は、晴れです");
+    playAquesTalk(talk);
+    return;
+  }
+  waitAquesTalk();
+
+  while (true)
+  {
+    M5.update();
+    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
+    {
+      sprintf(talk, "kota'ewa <NUMK VAL=%d> dayo-", answer);
+      playAquesTalk(talk);
+      waitAquesTalk();
+      break;
+    }
+    delay(10);
+  }
+}
+
+void questions()
+{
+  int num = (int)talkInfo[0]["question"];
+  int id = random(1, num);
+  const char *question = talkInfo[id]["question"];
+  const char *answer = talkInfo[id]["answer"];
+
+  playAquesTalk(question);
+  waitAquesTalk();
+
+  while (true)
+  {
+    M5.update();
+    if (M5.BtnA.wasClicked() || M5.BtnB.wasClicked() || M5.BtnC.wasClicked())
+    {
+      playAquesTalk(answer);
+      waitAquesTalk();
+      break;
+    }
+  }
+}
+
 void sssapiTalkMode()
 {
   avatar.setSpeechText("");
@@ -540,6 +547,7 @@ void weatherMode()
   startTime = millis();
 }
 
+
 // main =====================================================================
 
 void setup()
@@ -601,6 +609,7 @@ void setup()
   }
   talkInfo = getJson(endpointTalk);
   WiFi.disconnect(true);
+  avatar.setSpeechText("");
 }
 
 void loop()
