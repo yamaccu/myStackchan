@@ -13,7 +13,8 @@ framework = arduino
 [M5Unified](https://github.com/m5stack/M5Unified)  
 [m5stack-avatar](https://github.com/meganetaaan/m5stack-avatar)  
 [aquestalk](https://www.a-quest.com/) 　⇒AquesTalk ESP32  
-[ServoEasing](https://github.com/ArminJo/ServoEasing)
+[ServoEasing](https://github.com/ArminJo/ServoEasing)  
+[ArduinoJson](https://github.com/bblanchon/ArduinoJson)
 
 ## 改造箇所
 音声出力をDAC25⇒DAC26に変更、D級アンプとスピーカーを追加。  
@@ -30,8 +31,18 @@ framework = arduino
 
 
 ## 参考HP
+■作成ブログ  
+[スタックチャンを作ってみた](https://yamaccu.github.io/tech/20220910_stackchan)  
 
-[stack-chan-tester](https://github.com/mongonta0716/stack-chan-tester)  
-[天気予報をM5Stackで表示してみた](https://kuracux.hatenablog.jp/entry/2019/07/13/101143)  
-[天気予報API](https://www.drk7.jp/weather/)  
+■サーボ制御  
+[stack-chan-tester](https://github.com/mongonta0716/stack-chan-tester)   
+[M5Stack(ESP32)でサーボモータを使う](https://yamaccu.github.io/tils/20220801-M5Stack-servo)  
+
+■音声出力  
+[M5StackでAquesTalkを使って音声出力する](https://yamaccu.github.io/tils/20220829-M5Stack-AquesTalk)  
 [SSSAPI](https://sssapi.app/)
+
+■天気予報  
+[天気予報API](https://www.drk7.jp/weather/)  
+[M5Stackでwifiに接続し天気予報JSONを取得する](https://yamaccu.github.io/tils/20220808-M5Stack-JSON)  
+[M5StackでLCD画面に画像を表示する](https://yamaccu.github.io/tils/20220908-M5Stack-image)  
