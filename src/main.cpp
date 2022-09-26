@@ -99,8 +99,8 @@ static void playAquesTalk(const char *koe)
 }
 
 // wifi ===============================================================
-const char *ssid = "aterm-a49c44-g";
-const char *password = "06fda97276af7";
+const char *ssid = "xxxxxxxx";
+const char *password = "xxxxxxxx";
 
 // 天気予報取得先
 const char *endpointTenki = "https://www.drk7.jp/weather/json/13.js";
@@ -420,7 +420,7 @@ void arithmetic()
   }
   else if ((int)talkInfo[0]["answer"] == 5)
   {
-    sprintf(talk, "papiika mamii okinnsyai ippainetadesyo");
+    sprintf(talk, "tesutodayo");
     //sprintf(talk, "明日の天気は、晴れです");
     playAquesTalk(talk);
     return;
